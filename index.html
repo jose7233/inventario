@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>ClosetControl – Inventario</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap');
+
+  :root {
+    --bg: #0f0f12;
+    --surface: #17171c;
+    --surface2: #1f1f27;
+    --border: #2a2a35;
+    --accent: #c8f135;
+    --accent2: #7c5cfc;
+    --text: #f0f0f5;
+    --muted: #7a7a90;
+    --red: #ff4d6d;
+    --green: #c8f135;
+    --orange: #ff9f43;
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    padding-bottom: 80px;
+  }
+
+  /* TOP NAV */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+    letter-spacing: -0.5px;
+  }
+  .logo span { color: var(--accent); }
+
+  .capital-pill {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 6px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    cursor: pointer;
+  }
+
+  /* BOTTOM NAV */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex;
+    z-index: 100;
+  }
+  .nav-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 10px 0;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 10px;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+  .nav-btn.active { color: var(--accent); }
+  .nav-btn svg { width: 22px; height: 22px; }
+
+  /* PAGES */
+  .page { display: none; padding: 20px; }
+  .page.active { display: block; }
+
+  /* SECTION HEADER */
+  .section-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .section-sub { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+
+  /* CAPITAL BANNER */
+  .capital-banner {
+    background: linear-gradient(135deg, #1a1a24, #22223a);
+    border: 1px solid var(--accent2);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .capital-banner::before {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 140px; height: 140px;
+    background: var(--accent2);
+    opacity: 0.12;
+    border-radius: 50%;
+  }
+  .cap-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+  .cap-amount {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1.1;
+    margin: 4px 0 12px;
+  }
+  .cap-stats { display: flex; gap: 16px; flex-wrap: wrap; }
+  .cap-stat { font-size: 12px; color: var(--muted); }
+  .cap-stat strong { color: var(--text); display: block; font-size: 14px; }
+
+  .cap-actions { display: flex; gap: 10px; margin-top: 16px; }
+  .btn-outline {
+    flex: 1;
+    padding: 10px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    font-weight: 500;
+  }
+  .btn-accent {
+    flex: 1;
+    padding: 10px;
+    border-radius: var(--radius-sm);
+    border: none;
+    background: var(--accent);
+    color: #0f0f12;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    font-weight: 700;
+  }
+  .btn-danger {
+    flex: 1;
+    padding: 10px;
+    border-radius: var(--radius-sm);
+    border: none;
+    background: var(--red);
+    color: #fff;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    font-weight: 700;
+  }
+
+  /* PRODUCT GRID */
+  .products-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .product-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.1s;
+    position: relative;
+    overflow: hidden;
+  }
+  .product-card:active { transform: scale(0.98); }
+  .product-card:hover { border-color: var(--accent2); }
+  .product-card.low-stock { border-color: var(--orange); }
+  .product-card.no-stock { border-color: var(--red); opacity: 0.7; }
+  .product-emoji { font-size: 28px; margin-bottom: 8px; display: block; }
+  .product-name {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+  .product-price { font-size: 12px; color: var(--accent); font-weight: 500; }
+  .product-stock {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+  .stock-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-top: 6px;
+  }
+  .badge-ok { background: rgba(200,241,53,0.15); color: var(--accent); }
+  .badge-low { background: rgba(255,159,67,0.15); color: var(--orange); }
+  .badge-out { background: rgba(255,77,109,0.15); color: var(--red); }
+
+  /* TRANSACTIONS */
+  .tx-list { display: flex; flex-direction: column; gap: 8px; }
+  .tx-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .tx-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .tx-icon.sale { background: rgba(200,241,53,0.12); }
+  .tx-icon.withdraw { background: rgba(255,77,109,0.12); }
+  .tx-icon.expense { background: rgba(255,159,67,0.12); }
+  .tx-info { flex: 1; min-width: 0; }
+  .tx-desc { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tx-date { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .tx-amount { font-weight: 700; font-size: 14px; white-space: nowrap; }
+  .tx-amount.positive { color: var(--accent); }
+  .tx-amount.negative { color: var(--red); }
+
+  /* MODAL */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 200;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border-radius: 20px 20px 0 0;
+    width: 100%;
+    max-width: 480px;
+    padding: 24px 20px 36px;
+    border-top: 1px solid var(--border);
+    animation: slideUp 0.25s ease;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+  .modal-handle {
+    width: 36px; height: 4px;
+    background: var(--border);
+    border-radius: 100px;
+    margin: 0 auto 20px;
+  }
+  .modal-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 20px;
+  }
+  .form-group { margin-bottom: 14px; }
+  .form-label { font-size: 12px; color: var(--muted); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.5px; }
+  .form-input {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    font-size: 15px;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+    -webkit-appearance: none;
+  }
+  .form-input:focus { border-color: var(--accent2); }
+  select.form-input { cursor: pointer; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+  .btn-close {
+    flex: 1;
+    padding: 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+  }
+  .btn-confirm {
+    flex: 2;
+    padding: 12px;
+    border-radius: var(--radius-sm);
+    border: none;
+    background: var(--accent);
+    color: #0f0f12;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+  }
+  .btn-confirm.red { background: var(--red); color: #fff; }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    top: 70px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-20px);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 10px 20px;
+    font-size: 13px;
+    font-weight: 500;
+    z-index: 300;
+    opacity: 0;
+    transition: opacity 0.2s, transform 0.2s;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.success { border-color: var(--accent); color: var(--accent); }
+  .toast.error { border-color: var(--red); color: var(--red); }
+
+  /* SUMMARY STATS */
+  .stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+  }
+  .stat-card-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-card-value { font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 700; margin-top: 4px; }
+
+  /* SELL MODAL SPECIFIC */
+  .qty-ctrl {
+    display: flex; align-items: center; gap: 16px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 8px 14px;
+  }
+  .qty-btn {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 20px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    line-height: 1;
+  }
+  .qty-display { font-size: 24px; font-weight: 700; flex: 1; text-align: center; font-family: 'Space Grotesk', sans-serif; }
+  .sell-total { background: var(--surface2); border-radius: var(--radius-sm); padding: 12px 14px; margin-top: 8px; }
+  .sell-total-label { font-size: 12px; color: var(--muted); }
+  .sell-total-value { font-size: 22px; font-weight: 700; color: var(--accent); font-family: 'Space Grotesk', sans-serif; }
+
+  /* FILTER TABS */
+  .filter-tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 16px; }
+  .filter-tabs::-webkit-scrollbar { display: none; }
+  .filter-tab {
+    padding: 6px 14px;
+    border-radius: 100px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-size: 12px;
+    cursor: pointer;
+    white-space: nowrap;
+    font-family: 'Inter', sans-serif;
+  }
+  .filter-tab.active { background: var(--accent); color: #0f0f12; border-color: var(--accent); font-weight: 600; }
+
+  /* EDIT PRODUCT */
+  .edit-icon-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 8px; }
+  .icon-opt {
+    aspect-ratio: 1;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    font-size: 22px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .icon-opt.selected { border-color: var(--accent); background: rgba(200,241,53,0.1); }
+
+  /* EMPTY STATE */
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); }
+  .empty-state .emoji { font-size: 48px; margin-bottom: 12px; }
+
+  /* PROGRESS BAR */
+  .stock-bar { height: 4px; background: var(--border); border-radius: 100px; margin-top: 8px; overflow: hidden; }
+  .stock-bar-fill { height: 100%; border-radius: 100px; transition: width 0.3s; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">Closet<span>Control</span></div>
+  <div class="capital-pill" onclick="goTo('capital')">💰 <span id="topCapital">$0</span></div>
+</div>
+
+<!-- PAGES -->
+<div id="page-inventory" class="page active">
+  <p class="section-title">Inventario</p>
+  <p class="section-sub">Toca un producto para vender o editar</p>
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-card-label">Total prendas</div>
+      <div class="stat-card-value" id="totalItems">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-label">Valor en stock</div>
+      <div class="stat-card-value" id="totalValue" style="font-size:16px">$0</div>
+    </div>
+  </div>
+
+  <div id="productsGrid" class="products-grid"></div>
+</div>
+
+<div id="page-ventas" class="page">
+  <p class="section-title">Ventas</p>
+  <p class="section-sub">Historial de transacciones</p>
+
+  <div class="filter-tabs">
+    <button class="filter-tab active" onclick="filterTx('all', this)">Todas</button>
+    <button class="filter-tab" onclick="filterTx('sale', this)">Ventas</button>
+    <button class="filter-tab" onclick="filterTx('withdraw', this)">Retiros</button>
+    <button class="filter-tab" onclick="filterTx('expense', this)">Gastos</button>
+  </div>
+
+  <div id="txList" class="tx-list"></div>
+</div>
+
+<div id="page-capital" class="page">
+  <p class="section-title">Capital</p>
+  <p class="section-sub">Control del dinero del negocio</p>
+
+  <div class="capital-banner">
+    <div class="cap-label">Capital disponible</div>
+    <div class="cap-amount" id="capitalAmount">$0</div>
+    <div class="cap-stats">
+      <div class="cap-stat"><strong id="totalSales">$0</strong>Total ventas</div>
+      <div class="cap-stat"><strong id="totalExpenses">$0</strong>Gastos</div>
+      <div class="cap-stat"><strong id="totalWithdraws">$0</strong>Retiros</div>
+    </div>
+    <div class="cap-actions">
+      <button class="btn-outline" onclick="openModal('expense')">📦 Gasto</button>
+      <button class="btn-danger" onclick="openModal('withdraw')">💸 Retiro</button>
+    </div>
+  </div>
+
+  <p class="section-title" style="font-size:16px;margin-bottom:12px">Últimos movimientos</p>
+  <div id="txListCapital" class="tx-list"></div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" onclick="goTo('inventory')" id="nav-inventory">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+    Inventario
+  </button>
+  <button class="nav-btn" onclick="goTo('ventas')" id="nav-ventas">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 14l-4-4 4-4"/><path d="M5 10h11a4 4 0 0 1 0 8h-1"/></svg>
+    Ventas
+  </button>
+  <button class="nav-btn" onclick="goTo('capital')" id="nav-capital">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+    Capital
+  </button>
+</nav>
+
+<!-- MODAL: SELL -->
+<div class="modal-overlay" id="modal-sell">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="sell-modal-title">Vender prenda</div>
+    <div class="form-group">
+      <label class="form-label">Cantidad a vender</label>
+      <div class="qty-ctrl">
+        <button class="qty-btn" onclick="adjustQty(-1)">−</button>
+        <div class="qty-display" id="sellQty">1</div>
+        <button class="qty-btn" onclick="adjustQty(1)">+</button>
+      </div>
+      <div class="sell-total" style="margin-top:10px">
+        <div class="sell-total-label">Total a cobrar</div>
+        <div class="sell-total-value" id="sellTotal">$0</div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-close" onclick="closeModal('sell')">Cancelar</button>
+      <button class="btn-confirm" onclick="confirmSell()">✔ Registrar venta</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: PRODUCT OPTIONS -->
+<div class="modal-overlay" id="modal-product">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="product-modal-name">Producto</div>
+    <div style="display:flex;gap:10px;flex-direction:column">
+      <button class="btn-accent" onclick="openSell()">🛍️ Registrar venta</button>
+      <button class="btn-outline" onclick="openEditProduct()">✏️ Editar precio / stock</button>
+      <button class="btn-close" onclick="closeModal('product')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: EDIT PRODUCT -->
+<div class="modal-overlay" id="modal-edit">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Editar producto</div>
+    <div class="form-group">
+      <label class="form-label">Stock actual</label>
+      <input type="number" class="form-input" id="editStock" placeholder="0" inputmode="numeric">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Precio de venta (COP)</label>
+      <input type="number" class="form-input" id="editPrice" placeholder="0" inputmode="numeric">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-close" onclick="closeModal('edit')">Cancelar</button>
+      <button class="btn-confirm" onclick="confirmEdit()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: EXPENSE / WITHDRAW -->
+<div class="modal-overlay" id="modal-money">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="money-modal-title">Registrar gasto</div>
+    <div class="form-group">
+      <label class="form-label">Descripción</label>
+      <input type="text" class="form-input" id="moneyDesc" placeholder="Ej: Pago arriendo, mercancía...">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Monto (COP)</label>
+      <input type="number" class="form-input" id="moneyAmount" placeholder="0" inputmode="numeric">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-close" onclick="closeModal('money')">Cancelar</button>
+      <button class="btn-confirm red" id="moneyConfirmBtn" onclick="confirmMoney()">Registrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── DATA ───────────────────────────────────────────────────────────────────
+const DEFAULT_PRODUCTS = [
+  { id: 'pantalones',  name: 'Pantalones',   emoji: '👖', stock: 0, price: 0 },
+  { id: 'camisas',     name: 'Camisas/Polos', emoji: '👕', stock: 0, price: 0 },
+  { id: 'zapatos',     name: 'Zapatos',       emoji: '👟', stock: 0, price: 0 },
+  { id: 'chaquetas',   name: 'Chaquetas',     emoji: '🧥', stock: 0, price: 0 },
+  { id: 'bermudas',    name: 'Bermudas',      emoji: '🩳', stock: 0, price: 0 },
+  { id: 'busos',       name: 'Busos',         emoji: '🧶', stock: 0, price: 0 },
+  { id: 'blusas',      name: 'Blusas',        emoji: '👚', stock: 0, price: 0 },
+  { id: 'sudaderas',   name: 'Sudaderas',     emoji: '🩱', stock: 0, price: 0 },
+];
+
+function loadData() {
+  try {
+    const saved = localStorage.getItem('closetcontrol_v2');
+    if (saved) return JSON.parse(saved);
+  } catch(e) {}
+  return {
+    products: JSON.parse(JSON.stringify(DEFAULT_PRODUCTS)),
+    transactions: [],
+    capital: 0,
+    totalSales: 0,
+    totalExpenses: 0,
+    totalWithdraws: 0,
+  };
+}
+
+function saveData() {
+  localStorage.setItem('closetcontrol_v2', JSON.stringify(state));
+}
+
+let state = loadData();
+
+// ─── STATE ──────────────────────────────────────────────────────────────────
+let currentProduct = null;
+let sellQty = 1;
+let currentMoneyType = 'expense';
+let currentTxFilter = 'all';
+
+// ─── NAVIGATION ─────────────────────────────────────────────────────────────
+function goTo(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.getElementById('nav-' + page).classList.add('active');
+  if (page === 'inventory') renderInventory();
+  if (page === 'ventas') renderTransactions();
+  if (page === 'capital') renderCapital();
+}
+
+// ─── FORMAT ─────────────────────────────────────────────────────────────────
+function fmt(n) {
+  return '$' + Math.round(n).toLocaleString('es-CO');
+}
+
+// ─── INVENTORY ──────────────────────────────────────────────────────────────
+function renderInventory() {
+  const grid = document.getElementById('productsGrid');
+  grid.innerHTML = '';
+
+  let totalItems = 0, totalValue = 0;
+
+  state.products.forEach(p => {
+    totalItems += p.stock;
+    totalValue += p.stock * p.price;
+
+    let badge, cardClass = '';
+    if (p.stock === 0) { badge = `<span class="stock-badge badge-out">Sin stock</span>`; cardClass = 'no-stock'; }
+    else if (p.stock <= 3) { badge = `<span class="stock-badge badge-low">Poco stock</span>`; cardClass = 'low-stock'; }
+    else { badge = `<span class="stock-badge badge-ok">${p.stock} uds</span>`; }
+
+    const maxStock = Math.max(p.stock, 20);
+    const pct = p.stock === 0 ? 0 : Math.min((p.stock / maxStock) * 100, 100);
+    const barColor = p.stock === 0 ? 'var(--red)' : p.stock <= 3 ? 'var(--orange)' : 'var(--accent)';
+
+    grid.innerHTML += `
+      <div class="product-card ${cardClass}" onclick="openProductModal('${p.id}')">
+        <span class="product-emoji">${p.emoji}</span>
+        <div class="product-name">${p.name}</div>
+        <div class="product-price">${fmt(p.price)}</div>
+        <div class="product-stock">${p.stock} en inventario</div>
+        ${badge}
+        <div class="stock-bar"><div class="stock-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>
+      </div>`;
+  });
+
+  document.getElementById('totalItems').textContent = totalItems;
+  document.getElementById('totalValue').textContent = fmt(totalValue);
+  document.getElementById('topCapital').textContent = fmt(state.capital);
+}
+
+// ─── PRODUCT MODAL ───────────────────────────────────────────────────────────
+function openProductModal(id) {
+  currentProduct = state.products.find(p => p.id === id);
+  document.getElementById('product-modal-name').textContent = currentProduct.emoji + ' ' + currentProduct.name;
+  openModal('product');
+}
+
+function openSell() {
+  closeModal('product');
+  if (currentProduct.stock === 0) { showToast('Sin stock disponible', 'error'); return; }
+  sellQty = 1;
+  document.getElementById('sell-modal-title').textContent = 'Vender ' + currentProduct.name;
+  document.getElementById('sellQty').textContent = sellQty;
+  document.getElementById('sellTotal').textContent = fmt(currentProduct.price * sellQty);
+  openModal('sell');
+}
+
+function adjustQty(d) {
+  sellQty = Math.max(1, Math.min(sellQty + d, currentProduct.stock));
+  document.getElementById('sellQty').textContent = sellQty;
+  document.getElementById('sellTotal').textContent = fmt(currentProduct.price * sellQty);
+}
+
+function confirmSell() {
+  const total = currentProduct.price * sellQty;
+  currentProduct.stock -= sellQty;
+  state.capital += total;
+  state.totalSales += total;
+  state.transactions.unshift({
+    type: 'sale',
+    desc: `${sellQty}x ${currentProduct.name}`,
+    amount: total,
+    date: new Date().toISOString(),
+    productId: currentProduct.id,
+  });
+  saveData();
+  closeModal('sell');
+  renderInventory();
+  showToast(`¡Venta registrada! +${fmt(total)}`, 'success');
+}
+
+function openEditProduct() {
+  closeModal('product');
+  document.getElementById('editStock').value = currentProduct.stock;
+  document.getElementById('editPrice').value = currentProduct.price;
+  openModal('edit');
+}
+
+function confirmEdit() {
+  const newStock = parseInt(document.getElementById('editStock').value) || 0;
+  const newPrice = parseInt(document.getElementById('editPrice').value) || 0;
+  currentProduct.stock = Math.max(0, newStock);
+  currentProduct.price = Math.max(0, newPrice);
+  saveData();
+  closeModal('edit');
+  renderInventory();
+  showToast('Producto actualizado ✓', 'success');
+}
+
+// ─── CAPITAL ─────────────────────────────────────────────────────────────────
+function renderCapital() {
+  document.getElementById('capitalAmount').textContent = fmt(state.capital);
+  document.getElementById('totalSales').textContent = fmt(state.totalSales);
+  document.getElementById('totalExpenses').textContent = fmt(state.totalExpenses);
+  document.getElementById('totalWithdraws').textContent = fmt(state.totalWithdraws);
+  document.getElementById('topCapital').textContent = fmt(state.capital);
+
+  const list = document.getElementById('txListCapital');
+  const txs = state.transactions.slice(0, 15);
+  list.innerHTML = txs.length ? txs.map(txHTML).join('') : `<div class="empty-state"><div class="emoji">📭</div><p>Sin movimientos aún</p></div>`;
+}
+
+function openModal(type) {
+  document.getElementById('modal-' + type).classList.add('open');
+}
+function closeModal(type) {
+  document.getElementById('modal-' + type).classList.remove('open');
+}
+
+function openMoneyModal(type) {
+  currentMoneyType = type;
+  document.getElementById('money-modal-title').textContent = type === 'expense' ? '📦 Registrar gasto' : '💸 Registrar retiro';
+  document.getElementById('moneyConfirmBtn').textContent = type === 'expense' ? 'Registrar gasto' : 'Registrar retiro';
+  document.getElementById('moneyDesc').value = '';
+  document.getElementById('moneyAmount').value = '';
+  openModal('money');
+}
+
+// make openModal('expense') and openModal('withdraw') route correctly
+const _origOpenModal = openModal;
+function openModal(type) {
+  if (type === 'expense' || type === 'withdraw') { openMoneyModal(type); return; }
+  document.getElementById('modal-' + type).classList.add('open');
+}
+
+function confirmMoney() {
+  const desc = document.getElementById('moneyDesc').value.trim();
+  const amount = parseInt(document.getElementById('moneyAmount').value) || 0;
+  if (!desc) { showToast('Escribe una descripción', 'error'); return; }
+  if (amount <= 0) { showToast('Ingresa un monto válido', 'error'); return; }
+
+  state.capital -= amount;
+  if (currentMoneyType === 'expense') state.totalExpenses += amount;
+  else state.totalWithdraws += amount;
+
+  state.transactions.unshift({
+    type: currentMoneyType,
+    desc,
+    amount,
+    date: new Date().toISOString(),
+  });
+  saveData();
+  closeModal('money');
+  renderCapital();
+  showToast(currentMoneyType === 'expense' ? `Gasto registrado: -${fmt(amount)}` : `Retiro registrado: -${fmt(amount)}`, 'success');
+}
+
+// ─── TRANSACTIONS ────────────────────────────────────────────────────────────
+function txHTML(tx) {
+  const date = new Date(tx.date);
+  const dateStr = date.toLocaleDateString('es-CO', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+  const icons = { sale: '🛍️', withdraw: '💵', expense: '📦' };
+  const sign = tx.type === 'sale' ? '+' : '-';
+  const cls = tx.type === 'sale' ? 'positive' : 'negative';
+  return `
+    <div class="tx-item">
+      <div class="tx-icon ${tx.type}">${icons[tx.type]}</div>
+      <div class="tx-info">
+        <div class="tx-desc">${tx.desc}</div>
+        <div class="tx-date">${dateStr}</div>
+      </div>
+      <div class="tx-amount ${cls}">${sign}${fmt(tx.amount)}</div>
+    </div>`;
+}
+
+function renderTransactions() {
+  const list = document.getElementById('txList');
+  const filtered = currentTxFilter === 'all' ? state.transactions : state.transactions.filter(t => t.type === currentTxFilter);
+  list.innerHTML = filtered.length ? filtered.map(txHTML).join('') : `<div class="empty-state"><div class="emoji">📭</div><p>Sin registros aquí</p></div>`;
+}
+
+function filterTx(type, btn) {
+  currentTxFilter = type;
+  document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTransactions();
+}
+
+// ─── TOAST ───────────────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast show ${type}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// Close modals on overlay click
+document.querySelectorAll('.modal-overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
+});
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+renderInventory();
+</script>
+</body>
+</html>
